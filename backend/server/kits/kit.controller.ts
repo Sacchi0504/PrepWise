@@ -82,7 +82,7 @@ export const getGenerationStatus = async (req: AuthRequest, res: Response) => {
   }
 };
 
-import pdfParse from 'pdf-parse';
+const pdfParse = require('pdf-parse');
 import { evaluateResume } from '../pipeline/resume-evaluation';
 
 export const uploadResume = async (req: AuthRequest, res: Response) => {
