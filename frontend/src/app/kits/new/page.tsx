@@ -122,7 +122,7 @@ export default function CreateKit() {
                 <textarea
                   required
                   rows={10}
-                  className="w-full rounded-xl border border-gray-200 p-4 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all resize-none shadow-sm"
+                  className="w-full rounded-xl border border-gray-200 p-4 text-sm text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all resize-none shadow-sm"
                   placeholder="Paste the full job description here..."
                   value={jd}
                   onChange={(e) => setJd(e.target.value)}
@@ -139,7 +139,7 @@ export default function CreateKit() {
                 <input
                   type="url"
                   required
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm"
                   placeholder="https://company.com"
                   value={companyUrl}
                   onChange={(e) => setCompanyUrl(e.target.value)}
@@ -156,7 +156,7 @@ export default function CreateKit() {
                   min="1"
                   max="90"
                   required
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm"
                   value={daysAvailable}
                   onChange={(e) => setDaysAvailable(parseInt(e.target.value))}
                 />
