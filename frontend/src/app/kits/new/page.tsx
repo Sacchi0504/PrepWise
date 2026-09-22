@@ -35,7 +35,7 @@ export default function CreateKit() {
         formData.append('daysAvailable', daysAvailable.toString());
         body = formData;
       } else {
-        if (!jd) throw new Error("Please either paste a Job Description or upload a JD document.");
+        if (!jd) throw new Error("Please either paste a Job Description or upload a document.");
         headers['Content-Type'] = 'application/json';
         body = JSON.stringify({ jd, companyUrl, daysAvailable });
       }
@@ -45,9 +45,11 @@ export default function CreateKit() {
         headers,
         body
       });
+      
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create kit');
 
+      // Redirect to the detail page which will poll for status
       router.push(`/kits/${data.kit._id}`);
     } catch (err: any) {
       setError(err.message);
@@ -82,41 +84,50 @@ export default function CreateKit() {
             {error && <div className="p-4 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
             
             <div className="space-y-4">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                <FileText className="w-4 h-4 text-indigo-500" />
-                Job Description
-              </label>
-              
-              {/* File Upload Area */}
-              <label className={`cursor-pointer block border-2 border-dashed rounded-xl p-6 text-center transition-colors ${jdFile ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'}`}>
-                <input 
-                  type="file" 
-                  accept=".pdf,.txt" 
-                  className="hidden" 
-                  onChange={(e) => {
-                    setJdFile(e.target.files?.[0] || null);
-                    if (e.target.files?.[0]) setJd(''); // Clear text if file selected
-                  }}
-                />
-                <div className="flex flex-col items-center justify-center space-y-2">
-                  <Upload className={`w-8 h-8 ${jdFile ? 'text-indigo-600' : 'text-gray-400'}`} />
-                  <span className={`font-medium ${jdFile ? 'text-indigo-700' : 'text-gray-600'}`}>
-                    {jdFile ? jdFile.name : 'Upload JD Document (PDF or TXT)'}
-                  </span>
-                  {!jdFile && <span className="text-xs text-gray-400">or paste the text below</span>}
-                </div>
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                  <FileText className="w-4 h-4 text-indigo-500" />
+                  Job Description
+                </label>
+                
+                <label className="cursor-pointer inline-flex items-center gap-2 text-sm text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
+                  <Upload className="w-4 h-4" />
+                  <span className="font-medium">{jdFile ? jdFile.name : 'Upload JD (PDF/TXT)'}</span>
+                  <input 
+                    type="file" 
+                    accept=".pdf,.txt" 
+                    className="hidden" 
+                    onChange={(e) => {
+                      setJdFile(e.target.files?.[0] || null);
+                      if (e.target.files?.[0]) setJd('');
+                    }}
+                  />
+                </label>
+              </div>
 
-              {/* Text Area (disabled if file is uploaded) */}
-              <textarea
-                required={!jdFile}
-                disabled={!!jdFile}
-                rows={10}
-                className={`w-full rounded-xl border p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none shadow-sm ${jdFile ? 'bg-gray-100 border-gray-100 text-gray-400 cursor-not-allowed' : 'border-gray-200 bg-white'}`}
-                placeholder={jdFile ? 'File attached above.' : 'Paste the full job description here...'}
-                value={jd}
-                onChange={(e) => setJd(e.target.value)}
-              />
+              {jdFile ? (
+                <div className="w-full rounded-xl border border-indigo-200 bg-indigo-50/50 p-6 flex flex-col items-center justify-center text-indigo-800 space-y-2">
+                  <FileText className="w-8 h-8 text-indigo-400" />
+                  <p className="font-medium">File attached: {jdFile.name}</p>
+                  <p className="text-sm text-indigo-600/70">The text will be automatically extracted during generation.</p>
+                  <button 
+                    type="button"
+                    onClick={() => setJdFile(null)}
+                    className="text-xs text-red-500 hover:text-red-700 font-bold mt-2"
+                  >
+                    Remove File
+                  </button>
+                </div>
+              ) : (
+                <textarea
+                  required
+                  rows={10}
+                  className="w-full rounded-xl border border-gray-200 p-4 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all resize-none shadow-sm"
+                  placeholder="Paste the full job description here..."
+                  value={jd}
+                  onChange={(e) => setJd(e.target.value)}
+                />
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
