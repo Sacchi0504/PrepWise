@@ -10,15 +10,25 @@ export const createKit = async (req: AuthRequest, res: Response) => {
     
     // If a JD file was uploaded, parse it and overwrite 'jd'
     if (req.file) {
-      if (req.file.mimetype === 'application/pdf') {
-        const parsed = await pdfParse(req.file.buffer);
-        jd = parsed.text;
-      } else if (req.file.mimetype === 'text/plain') {
-        jd = req.file.buffer.toString('utf-8');
-      } else {
-        return res.status(400).json({ error: 'Unsupported JD file type. Please upload a PDF or TXT.' });
+      try {
+        if (req.file.mimetype === 'application/pdf') {
+          const parsed = await pdfParse(req.file.buffer);
+          jd = parsed.text;
+        } else if (req.file.mimetype === 'text/plain') {
+          jd = req.file.buffer.toString('utf-8');
+        } else {
+          return res.status(400).json({ error: 'Unsupported JD file type. Please upload a PDF or TXT.' });
+        }
+        
+        if (!jd || jd.trim().length === 0) {
+          return res.status(400).json({ error: 'Could not extract readable text from the uploaded document.' });
+        }
+      } catch (err) {
+        console.error('JD Parsing Error:', err);
+        return res.status(400).json({ error: 'Failed to parse the uploaded document. It might be corrupted or protected.' });
       }
     }
+    
     if (!jd || !companyUrl || !daysAvailable) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
