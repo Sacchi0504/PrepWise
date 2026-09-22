@@ -3,6 +3,18 @@ import { Kit } from '../models/Kit';
 import { AuthRequest } from '../auth/auth.middleware';
 import { runGenerationPipeline, generateContentHash } from '../pipeline/orchestrator';
 const pdfParse = require('pdf-parse');
+const PDFParser = require('pdf2json');
+
+const parsePdfFallback = (buffer: Buffer): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const pdfParser = new PDFParser(this, 1);
+    pdfParser.on('pdfParser_dataError', (errData: any) => reject(errData.parserError));
+    pdfParser.on('pdfParser_dataReady', () => {
+      resolve(pdfParser.getRawTextContent());
+    });
+    pdfParser.parseBuffer(buffer);
+  });
+};
 
 export const createKit = async (req: AuthRequest, res: Response) => {
   try {
@@ -24,8 +36,16 @@ export const createKit = async (req: AuthRequest, res: Response) => {
           return res.status(400).json({ error: 'Could not extract readable text from the uploaded document.' });
         }
       } catch (err) {
-        console.error('JD Parsing Error:', err);
-        return res.status(400).json({ error: 'Failed to parse the uploaded document. It might be corrupted or protected.' });
+        console.warn('JD Parsing Error with pdf-parse, attempting fallback...', err);
+        try {
+          jd = await parsePdfFallback(req.file.buffer);
+          if (!jd || jd.trim().length === 0) {
+            return res.status(400).json({ error: 'Could not extract readable text from the uploaded document.' });
+          }
+        } catch (fallbackErr) {
+          console.error('Fallback JD Parsing Error:', fallbackErr);
+          return res.status(400).json({ error: 'Failed to parse the uploaded document. It might be corrupted or protected.' });
+        }
       }
     }
     
@@ -118,8 +138,18 @@ export const uploadResume = async (req: AuthRequest, res: Response) => {
     const file = req.file;
 
     if (file.mimetype === 'application/pdf') {
-      const parsed = await pdfParse(file.buffer);
-      textContent = parsed.text;
+      try {
+        const parsed = await pdfParse(file.buffer);
+        textContent = parsed.text;
+      } catch (err) {
+        console.warn('Resume Parsing Error with pdf-parse, attempting fallback...', err);
+        try {
+          textContent = await parsePdfFallback(file.buffer);
+        } catch (fallbackErr) {
+          console.error('Fallback Resume Parsing Error:', fallbackErr);
+          return res.status(400).json({ error: 'Failed to parse the uploaded resume. It might be corrupted or protected.' });
+        }
+      }
     } else if (file.mimetype === 'text/plain') {
       textContent = file.buffer.toString('utf-8');
     } else {
