@@ -2,10 +2,23 @@ import { Response } from 'express';
 import { Kit } from '../models/Kit';
 import { AuthRequest } from '../auth/auth.middleware';
 import { runGenerationPipeline, generateContentHash } from '../pipeline/orchestrator';
+const pdfParse = require('pdf-parse');
 
 export const createKit = async (req: AuthRequest, res: Response) => {
   try {
-    const { jd, companyUrl, daysAvailable } = req.body;
+    let { jd, companyUrl, daysAvailable } = req.body;
+    
+    // If a JD file was uploaded, parse it and overwrite 'jd'
+    if (req.file) {
+      if (req.file.mimetype === 'application/pdf') {
+        const parsed = await pdfParse(req.file.buffer);
+        jd = parsed.text;
+      } else if (req.file.mimetype === 'text/plain') {
+        jd = req.file.buffer.toString('utf-8');
+      } else {
+        return res.status(400).json({ error: 'Unsupported JD file type. Please upload a PDF or TXT.' });
+      }
+    }
     if (!jd || !companyUrl || !daysAvailable) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -82,7 +95,7 @@ export const getGenerationStatus = async (req: AuthRequest, res: Response) => {
   }
 };
 
-const pdfParse = require('pdf-parse');
+
 import { evaluateResume } from '../pipeline/resume-evaluation';
 
 export const uploadResume = async (req: AuthRequest, res: Response) => {

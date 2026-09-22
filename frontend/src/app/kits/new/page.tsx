@@ -1,12 +1,13 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchWithAuth } from '@/lib/api';
+import { fetchWithAuth, API_URL } from '@/lib/api';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Sparkles, Building, Clock, FileText } from 'lucide-react';
+import { ArrowLeft, Sparkles, Building, Clock, FileText, Upload } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CreateKit() {
+  const [jdFile, setJdFile] = useState<File | null>(null);
   const [jd, setJd] = useState('');
   const [companyUrl, setCompanyUrl] = useState('');
   const [daysAvailable, setDaysAvailable] = useState(5);
@@ -20,11 +21,33 @@ export default function CreateKit() {
     setError('');
 
     try {
-      const data = await fetchWithAuth('/kits', {
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {
+        'Authorization': `Bearer ${token}`
+      };
+
+      let body: BodyInit;
+
+      if (jdFile) {
+        const formData = new FormData();
+        formData.append('jdFile', jdFile);
+        formData.append('companyUrl', companyUrl);
+        formData.append('daysAvailable', daysAvailable.toString());
+        body = formData;
+      } else {
+        if (!jd) throw new Error("Please either paste a Job Description or upload a JD document.");
+        headers['Content-Type'] = 'application/json';
+        body = JSON.stringify({ jd, companyUrl, daysAvailable });
+      }
+
+      const res = await fetch(`${API_URL}/kits`, {
         method: 'POST',
-        body: JSON.stringify({ jd, companyUrl, daysAvailable }),
+        headers,
+        body
       });
-      // Redirect to the detail page which will poll for status
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create kit');
+
       router.push(`/kits/${data.kit._id}`);
     } catch (err: any) {
       setError(err.message);
@@ -58,16 +81,39 @@ export default function CreateKit() {
           <form onSubmit={handleSubmit} className="p-8 space-y-8">
             {error && <div className="p-4 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
             
-            <div className="space-y-2">
+            <div className="space-y-4">
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-900">
                 <FileText className="w-4 h-4 text-indigo-500" />
                 Job Description
               </label>
+              
+              {/* File Upload Area */}
+              <label className={`cursor-pointer block border-2 border-dashed rounded-xl p-6 text-center transition-colors ${jdFile ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'}`}>
+                <input 
+                  type="file" 
+                  accept=".pdf,.txt" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    setJdFile(e.target.files?.[0] || null);
+                    if (e.target.files?.[0]) setJd(''); // Clear text if file selected
+                  }}
+                />
+                <div className="flex flex-col items-center justify-center space-y-2">
+                  <Upload className={`w-8 h-8 ${jdFile ? 'text-indigo-600' : 'text-gray-400'}`} />
+                  <span className={`font-medium ${jdFile ? 'text-indigo-700' : 'text-gray-600'}`}>
+                    {jdFile ? jdFile.name : 'Upload JD Document (PDF or TXT)'}
+                  </span>
+                  {!jdFile && <span className="text-xs text-gray-400">or paste the text below</span>}
+                </div>
+              </label>
+
+              {/* Text Area (disabled if file is uploaded) */}
               <textarea
-                required
+                required={!jdFile}
+                disabled={!!jdFile}
                 rows={10}
-                className="w-full rounded-xl border border-gray-200 p-4 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all resize-none shadow-sm"
-                placeholder="Paste the full job description here..."
+                className={`w-full rounded-xl border p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none shadow-sm ${jdFile ? 'bg-gray-100 border-gray-100 text-gray-400 cursor-not-allowed' : 'border-gray-200 bg-white'}`}
+                placeholder={jdFile ? 'File attached above.' : 'Paste the full job description here...'}
                 value={jd}
                 onChange={(e) => setJd(e.target.value)}
               />

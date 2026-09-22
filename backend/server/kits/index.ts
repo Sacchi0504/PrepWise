@@ -12,7 +12,7 @@ const router = Router();
 
 router.use(authenticate);
 
-router.post('/', createKit);
+router.post('/', upload.single('jdFile'), createKit);
 router.get('/', getKits);
 router.get('/:id', getKitById);
 router.delete('/:id', deleteKit);
