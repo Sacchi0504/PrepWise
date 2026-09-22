@@ -19,7 +19,7 @@ export async function generateStructuredData<T>(prompt: string, maxRetries = 3):
           { role: 'system', content: 'You are a helpful assistant that outputs only valid JSON. Do not include markdown formatting or backticks around the JSON.' },
           { role: 'user', content: prompt }
         ],
-        model: 'llama3-70b-8192', // or any other capable model available on Groq like 'mixtral-8x7b-32768'
+        model: 'llama-3.3-70b-versatile',
         response_format: { type: 'json_object' }
       });
       
