@@ -19,7 +19,7 @@ export async function generateStructuredData<T>(prompt: string, maxRetries = 3):
           { role: 'system', content: 'You are a helpful assistant that outputs only valid JSON. Do not include markdown formatting or backticks around the JSON.' },
           { role: 'user', content: prompt }
         ],
-        model: 'llama-3.3-70b-versatile',
+        model: 'qwen/qwen3.8-27b',
         response_format: { type: 'json_object' }
       });
       
